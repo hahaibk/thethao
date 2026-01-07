@@ -1,69 +1,70 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
+
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Models\Category;
 
 class CategoryController extends Controller
 {
-    // 1. Danh sách
+    // Hiển thị danh sách category
     public function index()
     {
-        $categories = Category::latest()->paginate(10);
+        $categories = Category::paginate(10); // phân trang 10 item
         return view('admin.categories.index', compact('categories'));
     }
 
-    // 2. Form thêm mới
+    // Form tạo category
     public function create()
     {
         return view('admin.categories.create');
     }
 
-    // 3. Xử lý THÊM (Gọi Model)
+    // Lưu category mới
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|unique:categories|max:255',
-        ], [
-            'name.required' => 'Tên danh mục là bắt buộc',
-            'name.unique'   => 'Tên danh mục đã tồn tại'
+            'name' => 'required|string|max:255',
         ]);
 
-        // GỌI MODEL XỬ LÝ
         Category::createCategory($request->all());
 
-        return redirect()->route('admin.categories.index')->with('success', 'Thêm mới thành công!');
+        return redirect()->route('admin.categories.index')
+                         ->with('success', 'Category tạo thành công!');
     }
 
-    // 4. Form sửa
+    // Hiển thị chi tiết category
+    public function show(Category $category)
+    {
+        return view('admin.categories.show', compact('category'));
+    }
+
+    // Form sửa category
     public function edit(Category $category)
     {
         return view('admin.categories.edit', compact('category'));
     }
 
-    // 5. Xử lý CẬP NHẬT (Gọi Model)
+    // Cập nhật category
     public function update(Request $request, Category $category)
     {
         $request->validate([
-            'name' => 'required|max:255|unique:categories,name,'.$category->id,
+            'name' => 'required|string|max:255',
         ]);
 
-        // GỌI MODEL XỬ LÝ
         $category->updateCategory($request->all());
 
-        return redirect()->route('admin.categories.index')->with('success', 'Cập nhật thành công!');
+        return redirect()->route('admin.categories.index')
+                         ->with('success', 'Category cập nhật thành công!');
     }
 
-    // 6. Xử lý XÓA (Gọi Model)
+    // Xóa category
     public function destroy(Category $category)
     {
-        try {
-            // GỌI MODEL XỬ LÝ
-            $category->deleteCategory();
-            return redirect()->route('admin.categories.index')->with('success', 'Xóa thành công!');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
-        }
+        $category->deleteCategory(true); // true nếu muốn xóa luôn sản phẩm liên quan
+
+        return redirect()->route('admin.categories.index')
+                         ->with('success', 'Category xóa thành công!');
     }
-}     
+}

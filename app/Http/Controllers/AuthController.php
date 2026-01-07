@@ -23,7 +23,7 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $role = Auth::user()->role;
 
-            if ($role === 'admin') return redirect('/admin');
+            if ($role === 'admin') return redirect('/admin/dashboard');
             if ($role === 'staff') return redirect('/staff');
 
             return redirect('/'); // user
@@ -68,5 +68,9 @@ class AuthController extends Controller
         Auth::logout();
         return redirect('/login');
     }
-    
+     protected function redirectTo()
+{
+    return auth()->user()->is_admin ? '/admin/dashboard' : '/';
+}
+
 }
