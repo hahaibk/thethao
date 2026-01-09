@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->string('color');
             $table->string('size');
             $table->integer('quantity')->default(0);
-            $table->decimal('price', 10, 2)->nullable();
+            $table->bigInteger('price')->nullable()->change();
             $table->timestamps();
         });
 

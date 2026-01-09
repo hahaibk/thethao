@@ -3,109 +3,160 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
     protected $fillable = ['name','price','category_id','description'];
 
-    // ===== RELATIONS =====
-    public function category() {
+    public function category()
+    {
         return $this->belongsTo(Category::class);
     }
 
-    public function variants() {
+    public function variants()
+    {
         return $this->hasMany(ProductVariant::class);
     }
 
-    // 👉 ẢNH GALLERY CHUNG
-    public function images() {
-        return $this->hasMany(ProductImage::class);
+    /**
+     * ẢNH CHUNG (KHÔNG GẮN VARIANT)
+     */
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class)
+            ->orderBy('sort_order');
+    }
+    /**
+     * TỔNG TỒN KHO
+     */
+    public function totalStock()
+    {
+        return $this->variants->sum('quantity');
     }
 
-    // ===== TÍNH TOÁN =====
-    public function totalStock(): int {
-        return $this->variants()->sum('quantity');
-    }
-
-    // ===== CRUD LOGIC =====
+    /* ================= CREATE ================= */
     public static function createProduct(array $data)
     {
-        $product = self::create([
-            'name'        => $data['name'],
-            'price'       => $data['price'],
-            'category_id' => $data['category_id'],
-            'description' => $data['description'] ?? null,
-        ]);
+        return DB::transaction(function () use ($data) {
 
-        // ✅ LƯU ẢNH GALLERY
-        if (!empty($data['images'])) {
-            foreach ($data['images'] as $index => $img) {
-                $path = $img->store('products', 'public');
-                $product->images()->create([
-                    'image_path' => $path,
-                    'sort_order' => $index
-                ]);
+            $product = self::create([
+                'name'        => $data['name'],
+                'price'       => $data['price'],
+                'category_id' => $data['category_id'],
+                'description' => $data['description'] ?? null,
+            ]);
+
+            // Ảnh chung
+            if (!empty($data['images'])) {
+                foreach ($data['images'] as $img) {
+                    $path = $img->store('products', 'public');
+                    $product->images()->create([
+                        'image_path' => $path
+                    ]);
+                }
             }
-        }
 
-        // ✅ VARIANTS
-        foreach ($data['variants'] as $variantData) {
-            $product->addVariant($variantData);
-        }
+            // Variant + ảnh variant
+            foreach ($data['variants'] as $v) {
+                $variant = $product->variants()->create([
+                    'color'    => $v['color'],
+                    'size'     => $v['size'],
+                    'quantity' => $v['quantity'],
+                    'price'    => $v['price'] ?? null,
+                ]);
 
-        return $product;
+                if (!empty($v['images'])) {
+                    foreach ($v['images'] as $img) {
+                        $path = $img->store('variants', 'public');
+                        $variant->images()->create([
+                            'product_id' => $product->id,
+                            'image_path' => $path
+                        ]);
+                    }
+                }
+            }
+
+            return $product;
+        });
     }
 
+    /* ================= UPDATE ================= */
     public function updateProduct(array $data)
     {
-        $this->update($data);
+        return DB::transaction(function () use ($data) {
 
-        // 👉 THÊM ẢNH GALLERY MỚI (KHÔNG XOÁ CŨ)
-        if (!empty($data['images'])) {
-            foreach ($data['images'] as $index => $img) {
-                $path = $img->store('products', 'public');
-                $this->images()->create([
-                    'image_path' => $path,
-                    'sort_order' => $index
+            $this->update([
+                'name'        => $data['name'],
+                'price'       => $data['price'],
+                'category_id' => $data['category_id'],
+                'description' => $data['description'] ?? null,
+            ]);
+
+            // thêm ảnh chung
+            if (!empty($data['images'])) {
+                foreach ($data['images'] as $img) {
+                    $path = $img->store('products', 'public');
+                    $this->images()->create([
+                        'image_path' => $path
+                    ]);
+                }
+            }
+
+            foreach ($data['variants'] as $v) {
+                $variant = !empty($v['id'])
+                    ? $this->variants()->find($v['id'])
+                    : $this->variants()->create([
+                        'color'    => $v['color'],
+                        'size'     => $v['size'],
+                        'quantity' => $v['quantity'],
+                        'price'    => $v['price'] ?? null,
+                    ]);
+
+                if (!$variant) continue;
+
+                $variant->update([
+                    'color'    => $v['color'],
+                    'size'     => $v['size'],
+                    'quantity' => $v['quantity'],
+                    'price'    => $v['price'] ?? null,
                 ]);
-            }
-        }
 
-        foreach ($data['variants'] as $variantData) {
-            if (!empty($variantData['id'])) {
-                $variant = $this->variants()->find($variantData['id']);
-                $variant?->updateVariant($variantData);
-            } else {
-                $this->addVariant($variantData);
+                if (!empty($v['images'])) {
+                    foreach ($v['images'] as $img) {
+                        $path = $img->store('variants', 'public');
+                        $variant->images()->create([
+                            'product_id' => $this->id,
+                            'image_path' => $path
+                        ]);
+                    }
+                }
             }
-        }
 
-        return $this;
+            return $this;
+        });
     }
 
+    /* ================= DELETE ================= */
     public function deleteProduct()
     {
-        $this->variants()->delete();
-        $this->images()->delete();
-        $this->delete();
-    }
+        return DB::transaction(function () {
 
-    // ===== VARIANT =====
-    public function addVariant(array $data)
-    {
-        $variant = $this->variants()->create([
-            'color'    => $data['color'],
-            'size'     => $data['size'],
-            'quantity' => $data['quantity'],
-            'price'    => $data['price'] ?? $this->price,
-        ]);
-
-        if (!empty($data['images'])) {
-            foreach ($data['images'] as $img) {
-                $variant->addImage($img);
+            foreach ($this->images as $img) {
+                Storage::disk('public')->delete($img->image_path);
             }
-        }
+            $this->images()->delete();
 
-        return $variant;
+            foreach ($this->variants as $variant) {
+                foreach ($variant->images as $img) {
+                    Storage::disk('public')->delete($img->image_path);
+                }
+                $variant->images()->delete();
+            }
+            $this->variants()->delete();
+
+            $this->delete();
+        });
     }
 }

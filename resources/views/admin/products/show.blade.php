@@ -1,90 +1,183 @@
 @extends('admin.layout')
+
 @section('content')
+<div class="product-show">
 
-<h3 class="fw-bold mb-4">
-    {{ $product->id ? '✏ Sửa sản phẩm' : '➕ Tạo sản phẩm' }}
-</h3>
+    {{-- ===== THÔNG TIN CHUNG ===== --}}
+    <div class="product-header">
+        <div class="left">
+            @php
+                $mainImage = $product->images->first();
+            @endphp
 
-<form method="POST"
-      action="{{ $product->id ? route('admin.products.update', $product) : route('admin.products.store') }}"
-      enctype="multipart/form-data"
-      class="card shadow-sm p-4">
-    @csrf
-    @if($product->id) @method('PUT') @endif
+            <div class="main-image">
+                @if($mainImage)
+                    <img src="{{ asset('storage/'.$mainImage->image_path) }}" id="mainPreview">
+                @else
+                    <div class="no-image">No image</div>
+                @endif
+            </div>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label">Tên sản phẩm</label>
-            <input type="text" class="form-control" name="name"
-                   value="{{ $product->name ?? '' }}" required>
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Giá cơ bản</label>
-            <input type="number" class="form-control" name="price"
-                   value="{{ $product->price ?? '' }}" required>
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">Danh mục</label>
-            <select class="form-select" name="category_id" required>
-                <option value="">-- Chọn danh mục --</option>
-                @foreach($categories as $cat)
-                    <option value="{{ $cat->id }}" @selected(($product->category_id ?? '') == $cat->id)>
-                        {{ $cat->name }}
-                    </option>
+            {{-- Gallery ảnh chung --}}
+            <div class="gallery">
+                @foreach($product->images as $img)
+                    <img
+                        src="{{ asset('storage/'.$img->image_path) }}"
+                        onclick="document.getElementById('mainPreview').src=this.src"
+                    >
                 @endforeach
-            </select>
+            </div>
         </div>
 
-        <div class="col-12">
-            <label class="form-label">Mô tả</label>
-            <textarea class="form-control" rows="3" name="description">{{ $product->description ?? '' }}</textarea>
+        <div class="right">
+            <h1>{{ $product->name }}</h1>
+            <p class="price">
+                {{ number_format($product->price,0,',','.') }}₫
+            </p>
+            <p class="desc">{{ $product->description }}</p>
         </div>
     </div>
 
-    <hr class="my-4">
+    {{-- ===== BIẾN THỂ ===== --}}
+    <h2 class="variant-title">Biến thể theo màu</h2>
 
-    <h5 class="fw-semibold mb-3">Variants</h5>
+    <div class="variants">
+        @foreach($product->variants as $variant)
+            <div class="variant-card">
 
-    <div class="variant-group">
-        @foreach($product->variants ?? [] as $index => $v)
-            @include('admin.products.variant_row', ['index' => $index, 'v' => $v])
+                <div class="variant-info">
+                    <strong>Màu:</strong> {{ $variant->color }} <br>
+                    <strong>Size:</strong> {{ $variant->size }} <br>
+                    <strong>Tồn kho:</strong> {{ $variant->quantity }}
+                </div>
+
+                {{-- Ảnh theo màu --}}
+                @if($variant->images->count())
+                    <div class="variant-images">
+                        @foreach($variant->images as $vimg)
+                            <img
+                                src="{{ asset('storage/'.$vimg->image_path) }}"
+                                onclick="document.getElementById('mainPreview').src=this.src"
+                            >
+                        @endforeach
+                    </div>
+                @else
+                    <div class="no-variant-image">Không có ảnh</div>
+                @endif
+
+            </div>
         @endforeach
     </div>
 
-    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addVariant()">
-        ➕ Thêm variant
-    </button>
+</div>
 
-    <div class="mt-4">
-        <button class="btn btn-success">💾 Lưu</button>
-    </div>
-</form>
-
-<script>
-let variantIndex = {{ count($product->variants ?? []) }};
-function addVariant(){
-    const container = document.querySelector('.variant-group');
-    container.insertAdjacentHTML('beforeend', `
-        <div class="card p-3 mb-3 border">
-            <div class="row g-2">
-                <div class="col-md-3">
-                    <input class="form-control" name="variants[${variantIndex}][color]" placeholder="Màu" required>
-                </div>
-                <div class="col-md-3">
-                    <input class="form-control" name="variants[${variantIndex}][size]" placeholder="Size" required>
-                </div>
-                <div class="col-md-3">
-                    <input type="number" class="form-control" name="variants[${variantIndex}][quantity]" value="1" required>
-                </div>
-                <div class="col-md-3">
-                    <input type="file" class="form-control" name="variants[${variantIndex}][images][]" multiple required>
-                </div>
-            </div>
-        </div>
-    `);
-    variantIndex++;
+{{-- ===== CSS GỌN ĐẸP ===== --}}
+<style>
+.product-show {
+    max-width: 1200px;
+    margin: 20px auto;
+    font-family: Arial, sans-serif;
 }
-</script>
+
+.product-header {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.main-image {
+    width: 400px;
+    height: 400px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+}
+
+.gallery {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.gallery img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.right h1 {
+    margin: 0 0 10px;
+}
+
+.price {
+    color: #e74c3c;
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.desc {
+    color: #555;
+}
+
+.variant-title {
+    margin-bottom: 15px;
+}
+
+.variants {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+    gap: 20px;
+}
+
+.variant-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fafafa;
+}
+
+.variant-info {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.variant-images {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.variant-images img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.no-variant-image {
+    color: #aaa;
+    font-size: 13px;
+}
+</style>
 @endsection

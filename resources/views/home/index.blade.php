@@ -48,10 +48,7 @@
             {{ number_format($item->price) }} đ
         </p>
 
-        <p>
-            Tồn kho:
-            {{ $item->totalStock() }}
-        </p>
+        
 
         <a href="{{ route('products.show', $item) }}">
             Xem chi tiết
