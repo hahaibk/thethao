@@ -6,17 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('variant_images', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->decimal('price', 10, 2);
-            $table->text('description')->nullable();
+            $table->foreignId('variant_id')->constrained('product_variants')->onDelete('cascade');
+            $table->string('image_path'); // đường dẫn ảnh
             $table->timestamps();
         });
     }
 
     public function down(): void {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('variant_images');
     }
 };
+

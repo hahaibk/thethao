@@ -10,31 +10,28 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\VariantController;
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC ROUTES (Khách & User)
+| PUBLIC ROUTES
 |--------------------------------------------------------------------------
 */
-// Trang chủ
 Route::get('/', [ProductController::class, 'index'])->name('home');
-
-// Chi tiết sản phẩm
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
 /*
 |--------------------------------------------------------------------------
-| USER ACTION (Phải đăng nhập)
+| USER (LOGIN REQUIRED)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    // Mua hàng
     Route::post('/buy/{product}', [CartController::class, 'buy'])->name('cart.buy');
 });
 
 /*
 |--------------------------------------------------------------------------
-| AUTH (Đăng nhập / Đăng ký / Logout)
+| AUTH
 |--------------------------------------------------------------------------
 */
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -47,27 +44,30 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN ROUTES (Phải là admin)
+| ADMIN
 |--------------------------------------------------------------------------
 */
-    Route::prefix('admin')
-        ->middleware(['auth','admin'])
-        ->name('admin.')
-        ->group(function () {
+Route::prefix('admin')
+    ->middleware(['auth', 'admin'])
+    ->name('admin.')
+    ->group(function () {
 
-            // Dashboard
-            Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
-            // ===== SẢN PHẨM =====
-            Route::resource('products', AdminProductController::class);
+        // Products
+        Route::resource('products', AdminProductController::class);
 
-            // Thêm variant sản phẩm
-            Route::post('products/{product}/variant', [AdminProductController::class, 'storeVariant'])
-                ->name('products.variant.store');
+        // Variant delete
+        Route::delete(
+            'variants/{variant}',
+            [VariantController::class, 'destroy']
+        )->name('variants.destroy');
 
-            // ===== USER =====
-            Route::resource('users', AdminUserController::class);
+        // Users
+        Route::resource('users', AdminUserController::class);
 
-            // ===== CATEGORY =====
-            Route::resource('categories', CategoryController::class);
+        // Categories
+        Route::resource('categories', CategoryController::class);
     });

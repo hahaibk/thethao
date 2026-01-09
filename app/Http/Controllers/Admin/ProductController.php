@@ -3,60 +3,108 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
     public function index()
     {
-        return view('admin.products.index', [
-            'products' => Product::with('category')->paginate(10)
-        ]);
+        $products = Product::with('variants.images', 'category')
+            ->withSum('variants as total_stock', 'quantity')
+            ->withCount('variants')
+            ->paginate(10);
+
+        return view('admin.products.index', compact('products'));
     }
 
     public function create()
     {
-        return view('admin.products.create', [
-            'categories' => Category::all()
+        return view('admin.products.form', [
+            'product' => new Product(), // ⭐ RẤT QUAN TRỌNG
+            'categories' => Category::all(),
         ]);
     }
 
     public function store(Request $request)
     {
-        $product = Product::createProduct($request->all());
+        $data = $request->validate([
+            'name' => 'required|string',
+            'price' => 'required|numeric',
+            'category_id' => 'required|exists:categories,id',
+            'description' => 'nullable|string',
+
+            'variants' => 'required|array|min:1',
+            'variants.*.color' => 'required|string',
+            'variants.*.size' => 'required|string',
+            'variants.*.quantity' => 'required|integer|min:0',
+            'variants.*.price' => 'nullable|numeric',
+
+            // 👉 BẮT BUỘC CÓ ẢNH KHI TẠO
+            'variants.*.images' => 'required|array|min:1',
+            'variants.*.images.*' => 'required|image|max:2048',
+        ]);
+
+        Product::createProduct($data);
 
         return redirect()
-            ->route('admin.products.show', $product)
+            ->route('admin.products.index')
             ->with('success', 'Tạo sản phẩm thành công');
+    }
+
+    public function edit(Product $product)
+    {
+        $product->load('variants.images');
+
+        return view('admin.products.form', [
+            'product' => $product,
+            'categories' => Category::all(),
+        ]);
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $data = $request->validate([
+            'name' => 'required|string',
+            'price' => 'required|numeric',
+            'category_id' => 'required|exists:categories,id',
+            'description' => 'nullable|string',
+
+            'variants' => 'required|array|min:1',
+            'variants.*.id' => 'nullable|exists:product_variants,id',
+            'variants.*.color' => 'required|string',
+            'variants.*.size' => 'required|string',
+            'variants.*.quantity' => 'required|integer|min:0',
+            'variants.*.price' => 'nullable|numeric',
+
+            // 👉 update thì cho phép KHÔNG chọn ảnh mới
+            'variants.*.images' => 'nullable|array',
+            'variants.*.images.*' => 'image|max:2048',
+        ]);
+
+        $product->updateProduct($data);
+
+        return redirect()
+            ->route('admin.products.index')
+            ->with('success', 'Cập nhật sản phẩm thành công');
     }
 
     public function show(Product $product)
     {
-        $product->load('colors.sizes', 'category');
+        $product->load('variants.images')
+            ->loadCount('variants')
+            ->loadSum('variants as total_stock', 'quantity');
+
         return view('admin.products.show', compact('product'));
     }
 
-    /**
-     * NHẬP KHO
-     */
-    public function storeVariant(Request $request, Product $product)
+    public function destroy(Product $product)
     {
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')
-                ->store('products', 'public');
-        }
+        $product->deleteProduct();
 
-        $product->addStock([
-            'color'    => $request->color,
-            'size'     => $request->size,
-            'quantity' => $request->quantity,
-            'image'    => $imagePath
-        ]);
-
-        return back()->with('success', 'Nhập kho thành công');
+        return redirect()
+            ->route('admin.products.index')
+            ->with('success', 'Xóa sản phẩm thành công');
     }
 }

@@ -1,77 +1,90 @@
 @extends('admin.layout')
-
 @section('content')
-<h2>{{ $product->name }}</h2>
-<p>Giá: {{ number_format($product->price) }} đ</p>
-<p>Loại: {{ $product->category->name }}</p>
 
-<hr>
-
-<h3>Kho hàng</h3>
-
-@forelse($product->colors as $color)
-    <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px">
-        <b>Màu:</b> {{ $color->color ?? 'Mặc định' }} <br>
-
-        @if($color->image)
-            <img src="{{ asset('storage/'.$color->image) }}" width="120">
-        @endif
-
-        <ul>
-            @foreach($color->sizes as $size)
-                <li>
-                    Size {{ $size->size ?? 'FREE' }} :
-                    {{ $size->quantity }}
-                </li>
-            @endforeach
-        </ul>
-    </div>
-@empty
-    <p>Chưa có hàng trong kho</p>
-@endforelse
-
-<hr>
-
-<h3>Nhập kho (thêm size / màu)</h3>
+<h3 class="fw-bold mb-4">
+    {{ $product->id ? '✏ Sửa sản phẩm' : '➕ Tạo sản phẩm' }}
+</h3>
 
 <form method="POST"
+      action="{{ $product->id ? route('admin.products.update', $product) : route('admin.products.store') }}"
       enctype="multipart/form-data"
-      action="{{ route('admin.products.variant.store', $product) }}">
+      class="card shadow-sm p-4">
     @csrf
+    @if($product->id) @method('PUT') @endif
 
-    {{-- MÀU --}}
-    @if($product->category->has_color)
-        <div>
-            <label>Màu</label>
-            <input type="text" name="color" placeholder="VD: Đỏ, Đen">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Tên sản phẩm</label>
+            <input type="text" class="form-control" name="name"
+                   value="{{ $product->name ?? '' }}" required>
         </div>
 
-        <div>
-            <label>Ảnh theo màu</label>
-            <input type="file" name="image">
+        <div class="col-md-6">
+            <label class="form-label">Giá cơ bản</label>
+            <input type="number" class="form-control" name="price"
+                   value="{{ $product->price ?? '' }}" required>
         </div>
-    @endif
 
-    {{-- SIZE --}}
-    @if($product->category->has_size)
-        <div>
-            <label>Size</label>
-            <select name="size">
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
+        <div class="col-md-6">
+            <label class="form-label">Danh mục</label>
+            <select class="form-select" name="category_id" required>
+                <option value="">-- Chọn danh mục --</option>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}" @selected(($product->category_id ?? '') == $cat->id)>
+                        {{ $cat->name }}
+                    </option>
+                @endforeach
             </select>
         </div>
-    @endif
 
-    {{-- SỐ LƯỢNG --}}
-    <div>
-        <label>Số lượng</label>
-        <input type="number" name="quantity" min="1" required>
+        <div class="col-12">
+            <label class="form-label">Mô tả</label>
+            <textarea class="form-control" rows="3" name="description">{{ $product->description ?? '' }}</textarea>
+        </div>
     </div>
 
-    <br>
-    <button type="submit">Nhập kho</button>
+    <hr class="my-4">
+
+    <h5 class="fw-semibold mb-3">Variants</h5>
+
+    <div class="variant-group">
+        @foreach($product->variants ?? [] as $index => $v)
+            @include('admin.products.variant_row', ['index' => $index, 'v' => $v])
+        @endforeach
+    </div>
+
+    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addVariant()">
+        ➕ Thêm variant
+    </button>
+
+    <div class="mt-4">
+        <button class="btn btn-success">💾 Lưu</button>
+    </div>
 </form>
+
+<script>
+let variantIndex = {{ count($product->variants ?? []) }};
+function addVariant(){
+    const container = document.querySelector('.variant-group');
+    container.insertAdjacentHTML('beforeend', `
+        <div class="card p-3 mb-3 border">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <input class="form-control" name="variants[${variantIndex}][color]" placeholder="Màu" required>
+                </div>
+                <div class="col-md-3">
+                    <input class="form-control" name="variants[${variantIndex}][size]" placeholder="Size" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" name="variants[${variantIndex}][quantity]" value="1" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="file" class="form-control" name="variants[${variantIndex}][images][]" multiple required>
+                </div>
+            </div>
+        </div>
+    `);
+    variantIndex++;
+}
+</script>
 @endsection

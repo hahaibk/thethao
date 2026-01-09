@@ -44,5 +44,4 @@
 </table>
 
 <br>
-{{ $categories->links() }}
 @endsection

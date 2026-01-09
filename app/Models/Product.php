@@ -1,74 +1,111 @@
 <?php
 
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    protected $fillable = [
-        'name',
-        'price',
-        'category_id',
-        'variants'
-    ];
+    protected $fillable = ['name','price','category_id','description'];
 
-    protected $casts = [
-        'variants' => 'array'
-    ];
-
-    /* =====================
-        RELATION
-    ====================== */
-    public function category()
-    {
+    // ===== RELATIONS =====
+    public function category() {
         return $this->belongsTo(Category::class);
     }
 
-    /* =====================
-        BUSINESS LOGIC
-    ====================== */
+    public function variants() {
+        return $this->hasMany(ProductVariant::class);
+    }
 
-    // Tạo sản phẩm với biến thể đầu tiên
-    public static function createWithVariant(array $data)
+    // 👉 ẢNH GALLERY CHUNG
+    public function images() {
+        return $this->hasMany(ProductImage::class);
+    }
+
+    // ===== TÍNH TOÁN =====
+    public function totalStock(): int {
+        return $this->variants()->sum('quantity');
+    }
+
+    // ===== CRUD LOGIC =====
+    public static function createProduct(array $data)
     {
-        return self::create([
+        $product = self::create([
             'name'        => $data['name'],
             'price'       => $data['price'],
             'category_id' => $data['category_id'],
-            'variants'    => [$data['variant']]
+            'description' => $data['description'] ?? null,
         ]);
-    }
 
-    // Thêm hoặc cộng dồn biến thể (size + màu)
-    public function addOrUpdateVariant(array $newVariant)
-    {
-        $variants = $this->variants ?? [];
-
-        foreach ($variants as &$variant) {
-            if (
-                ($variant['size'] ?? null)  === ($newVariant['size'] ?? null) &&
-                ($variant['color'] ?? null) === ($newVariant['color'] ?? null)
-            ) {
-                $variant['quantity'] += $newVariant['quantity'];
-                $this->update(['variants' => $variants]);
-                return;
+        // ✅ LƯU ẢNH GALLERY
+        if (!empty($data['images'])) {
+            foreach ($data['images'] as $index => $img) {
+                $path = $img->store('products', 'public');
+                $product->images()->create([
+                    'image_path' => $path,
+                    'sort_order' => $index
+                ]);
             }
         }
 
-        $variants[] = $newVariant;
-        $this->update(['variants' => $variants]);
+        // ✅ VARIANTS
+        foreach ($data['variants'] as $variantData) {
+            $product->addVariant($variantData);
+        }
+
+        return $product;
     }
 
-    /* =====================
-        DASHBOARD
-    ====================== */
-
-    // ✅ HÀM BẠN ĐANG THIẾU
-    public function totalStock(): int
+    public function updateProduct(array $data)
     {
-        return collect($this->variants ?? [])
-            ->sum(fn ($variant) => $variant['quantity'] ?? 0);
+        $this->update($data);
+
+        // 👉 THÊM ẢNH GALLERY MỚI (KHÔNG XOÁ CŨ)
+        if (!empty($data['images'])) {
+            foreach ($data['images'] as $index => $img) {
+                $path = $img->store('products', 'public');
+                $this->images()->create([
+                    'image_path' => $path,
+                    'sort_order' => $index
+                ]);
+            }
+        }
+
+        foreach ($data['variants'] as $variantData) {
+            if (!empty($variantData['id'])) {
+                $variant = $this->variants()->find($variantData['id']);
+                $variant?->updateVariant($variantData);
+            } else {
+                $this->addVariant($variantData);
+            }
+        }
+
+        return $this;
+    }
+
+    public function deleteProduct()
+    {
+        $this->variants()->delete();
+        $this->images()->delete();
+        $this->delete();
+    }
+
+    // ===== VARIANT =====
+    public function addVariant(array $data)
+    {
+        $variant = $this->variants()->create([
+            'color'    => $data['color'],
+            'size'     => $data['size'],
+            'quantity' => $data['quantity'],
+            'price'    => $data['price'] ?? $this->price,
+        ]);
+
+        if (!empty($data['images'])) {
+            foreach ($data['images'] as $img) {
+                $variant->addImage($img);
+            }
+        }
+
+        return $variant;
     }
 }
