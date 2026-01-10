@@ -1,214 +1,198 @@
 @extends('admin.layout')
-
 @section('content')
-<div class="product-edit">
 
-    <h1>Cập nhật sản phẩm</h1>
+<h1>{{ $product->id ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm mới' }}</h1>
 
-    {{-- FORM CHÍNH --}}
-    <form action="{{ route('admin.products.update', $product) }}"
-          method="POST"
-          enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
+<form action="{{ $product->id ? route('admin.products.update',$product) : route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+    @csrf
+    @if($product->id) @method('PUT') @endif
 
-        {{-- ===== THÔNG TIN CHUNG ===== --}}
-        <div class="box">
-            <label>Tên sản phẩm</label>
-            <input type="text" name="name"
-                   value="{{ old('name', $product->name) }}" required>
+    {{-- Tên sản phẩm --}}
+    <div class="form-group">
+        <label>Tên sản phẩm</label>
+        <input type="text" name="name" value="{{ old('name',$product->name) }}" required>
+    </div>
 
-            <label>Giá</label>
-            <input type="number" name="price"
-                   value="{{ old('price', $product->price) }}" required>
+    {{-- Giá --}}
+    <div class="form-group">
+        <label>Giá</label>
+        <input type="number" name="price" value="{{ old('price',$product->price) }}" required>
+    </div>
 
-            <label>Danh mục</label>
-            <select name="category_id" required>
-                @foreach($categories as $cat)
-                    <option value="{{ $cat->id }}"
-                        @selected($product->category_id == $cat->id)>
-                        {{ $cat->name }}
-                    </option>
-                @endforeach
-            </select>
+    {{-- Danh mục --}}
+    <div class="form-group">
+        <label>Danh mục</label>
+        <select name="category_id" id="category-select" required>
+            @foreach($categories as $cat)
+                <option value="{{ $cat->id }}"
+                    data-has-color="{{ $cat->has_color ?? 0 }}"
+                    data-has-size="{{ $cat->has_size ?? 0 }}"
+                    @if(old('category_id',$product->category_id)==$cat->id) selected @endif>
+                    {{ $cat->name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
 
-            <label>Mô tả</label>
-            <textarea name="description">{{ old('description',$product->description) }}</textarea>
-        </div>
+    {{-- Mô tả --}}
+    <div class="form-group">
+        <label>Mô tả</label>
+        <textarea name="description">{{ old('description',$product->description) }}</textarea>
+    </div>
 
-        {{-- ===== ẢNH CHUNG ===== --}}
-        <div class="box">
-            <h3>Ảnh sản phẩm chung</h3>
+    {{-- Ảnh chung --}}
+    <div class="form-group">
+        <label>Ảnh chung</label>
+        <input type="file" name="images[]" multiple>
 
-            <input type="file" name="images[]" multiple>
-
-            <div class="image-list">
+        @if($product->images && count($product->images))
+            <div class="image-preview">
                 @foreach($product->images as $img)
-                    <div class="img-box">
-                        <img src="{{ asset('storage/'.$img->image_path) }}">
-                        <button type="button"
-                                onclick="deleteImage('{{ route('admin.product_images.destroy',$img) }}')">
-                            ✕
-                        </button>
+                    <div class="img-box" data-id="{{ $img->id }}" data-type="product">
+                        <img src="{{ asset('storage/'.$img->image_path) }}" width="80">
+                        <button type="button" class="delete-image">X</button>
                     </div>
                 @endforeach
             </div>
-        </div>
+        @endif
+    </div>
 
-        {{-- ===== BIẾN THỂ ===== --}}
-        <div class="box">
-            <h3>Biến thể theo màu / size</h3>
+    {{-- Biến thể --}}
+    <h3>Biến thể</h3>
+    <div id="variants">
+        @php $oldVariants = old('variants',$product->variants->toArray() ?? []); @endphp
+        @foreach($oldVariants as $i => $v)
+            <div class="variant-card">
+                <input type="hidden" name="variants[{{$i}}][id]" value="{{ $v['id'] ?? '' }}">
 
-            @foreach($product->variants as $i => $variant)
-                <div class="variant-card">
-
-                    <input type="hidden"
-                           name="variants[{{ $i }}][id]"
-                           value="{{ $variant->id }}">
-
-                    <div class="row">
-                        <input type="text"
-                               name="variants[{{ $i }}][color]"
-                               value="{{ $variant->color }}"
-                               placeholder="Màu" required>
-
-                        <input type="text"
-                               name="variants[{{ $i }}][size]"
-                               value="{{ $variant->size }}"
-                               placeholder="Size" required>
-
-                        <input type="number"
-                               name="variants[{{ $i }}][quantity]"
-                               value="{{ $variant->quantity }}"
-                               placeholder="Số lượng" required>
-                    </div>
-
-                    <label>Ảnh theo màu</label>
-                    <input type="file"
-                           name="variants[{{ $i }}][images][]"
-                           multiple>
-
-                    <div class="image-list">
-                        @foreach($variant->images as $vimg)
-                            <div class="img-box">
-                                <img src="{{ asset('storage/'.$vimg->image_path) }}">
-                                <button type="button"
-                                        onclick="deleteImage('{{ route('admin.variant_images.destroy',$vimg) }}')">
-                                    ✕
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-
+                <div class="variant-color">
+                    <label>Màu</label>
+                    <input type="text" name="variants[{{$i}}][color]" value="{{ $v['color'] ?? '' }}">
                 </div>
-            @endforeach
-        </div>
 
-        <button class="btn-save">💾 Lưu sản phẩm</button>
-    </form>
-</div>
+                <div class="variant-size">
+                    <label>Size</label>
+                    <input type="text" name="variants[{{$i}}][size]" value="{{ $v['size'] ?? '' }}">
+                </div>
 
-{{-- ===== FORM XÓA ẨN (KHÔNG LỒNG FORM) ===== --}}
-<form id="delete-form" method="POST" style="display:none">
-    @csrf
-    @method('DELETE')
+                <div>
+                    <label>Số lượng</label>
+                    <input type="number" name="variants[{{$i}}][quantity]" value="{{ $v['quantity'] ?? 0 }}" required>
+                </div>
+
+                {{-- Ảnh biến thể --}}
+                <div>
+                    <label>Ảnh biến thể</label>
+                    <input type="file" name="variants[{{$i}}][images][]" multiple>
+
+                    @if(isset($v['images']) && count($v['images']))
+                        <div class="image-preview">
+                            @foreach($v['images'] as $img)
+                                <div class="img-box" data-id="{{ $img['id'] ?? 0 }}" data-type="variant">
+                                    <img src="{{ asset('storage/'.$img['image_path']) }}" width="80">
+                                    <button type="button" class="delete-image">X</button>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <button type="button" onclick="this.closest('.variant-card').remove()">Xóa biến thể</button>
+            </div>
+        @endforeach
+    </div>
+
+    <button type="button" onclick="addVariant()">Thêm biến thể</button>
+    <br><br>
+    <button type="submit">Lưu</button>
 </form>
 
 <script>
-function deleteImage(url) {
-    if (!confirm('Xóa ảnh này?')) return;
-    const form = document.getElementById('delete-form');
-    form.action = url;
-    form.submit();
+let variantIndex = {{ count($oldVariants) }};
+
+// Thêm variant
+function addVariant(){
+    const container = document.getElementById('variants');
+    const div = document.createElement('div');
+    div.classList.add('variant-card');
+
+    div.innerHTML = `
+        <div class="variant-color">
+            <label>Màu</label>
+            <input type="text" name="variants[${variantIndex}][color]">
+        </div>
+        <div class="variant-size">
+            <label>Size</label>
+            <input type="text" name="variants[${variantIndex}][size]">
+        </div>
+        <div>
+            <label>Số lượng</label>
+            <input type="number" name="variants[${variantIndex}][quantity]" value="0" required>
+        </div>
+        <div>
+            <label>Ảnh biến thể</label>
+            <input type="file" name="variants[${variantIndex}][images][]" multiple>
+        </div>
+        <button type="button" onclick="this.closest('.variant-card').remove()">Xóa biến thể</button>
+    `;
+    container.appendChild(div);
+    variantIndex++;
 }
+
+// Ẩn/hiện color & size theo category
+function updateVariantVisibility(){
+    const select = document.getElementById('category-select');
+    const hasColor = select.selectedOptions[0].dataset.hasColor == 1;
+    const hasSize = select.selectedOptions[0].dataset.hasSize == 1;
+
+    document.querySelectorAll('.variant-card').forEach(card=>{
+        card.querySelector('.variant-color').style.display = hasColor?'block':'none';
+        card.querySelector('.variant-size').style.display = hasSize?'block':'none';
+    });
+}
+
+updateVariantVisibility();
+document.getElementById('category-select').addEventListener('change', updateVariantVisibility);
+
+// AJAX xóa ảnh
+document.querySelectorAll('.delete-image').forEach(btn=>{
+    btn.addEventListener('click', function(){
+        if(!confirm('Xóa ảnh này?')) return;
+
+        const box = this.closest('.img-box');
+        const id = box.dataset.id;
+        const type = box.dataset.type;
+        let url = '';
+
+        if(type==='product') url = `/admin/product-images/${id}`;
+        else url = `/admin/variant-images/${id}`;
+
+        fetch(url,{
+            method:'DELETE',
+            headers:{
+                'X-CSRF-TOKEN':'{{ csrf_token() }}',
+                'Accept':'application/json'
+            }
+        })
+        .then(res=>res.json())
+        .then(data=>{
+            if(data.success) box.remove();
+            else alert('Xóa thất bại!');
+        })
+        .catch(err=>{console.error(err); alert('Xóa thất bại!');});
+    });
+});
 </script>
 
-{{-- ===== CSS GỌN GÀNG ===== --}}
 <style>
-.product-edit {
-    max-width: 1100px;
-    margin: 20px auto;
-    font-family: Arial, sans-serif;
-}
-
-.box {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    background: #fafafa;
-}
-
-.box label {
-    display: block;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-.box input,
-.box select,
-.box textarea {
-    width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-}
-
-.image-list {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-}
-
-.img-box {
-    position: relative;
-}
-
-.img-box img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-
-.img-box button {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    border: none;
-    background: #e74c3c;
-    color: #fff;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-.variant-card {
-    border: 1px dashed #ccc;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 6px;
-}
-
-.row {
-    display: flex;
-    gap: 10px;
-}
-
-.row input {
-    flex: 1;
-}
-
-.btn-save {
-    background: #2ecc71;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 15px;
-}
+.form-group {margin-bottom:15px;}
+.form-group label {display:block;margin-bottom:5px;font-weight:bold;}
+.form-group input, .form-group select, .form-group textarea {width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;}
+.variant-card {border:1px solid #ddd;padding:10px;margin-bottom:10px;border-radius:6px;background:#fafafa;}
+.image-preview {display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
+.img-box {position:relative;}
+.img-box img {border:1px solid #ccc;border-radius:4px;}
+.img-box button {position:absolute; top:0; right:0;}
 </style>
+
 @endsection

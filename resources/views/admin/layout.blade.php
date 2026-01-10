@@ -38,11 +38,29 @@
             text-decoration: none;
             border-radius: 4px;
             margin-bottom: 5px;
+            transition: 0.2s;
         }
 
         .sidebar a:hover,
         .sidebar a.active {
             background: #1abc9c;
+        }
+
+        /* Submenu */
+        .sidebar .submenu {
+            display: none;
+            margin-left: 10px;
+        }
+
+        .sidebar .submenu a {
+            padding-left: 25px;
+            font-size: 14px;
+            background: #34495e;
+        }
+
+        .sidebar .submenu a:hover,
+        .sidebar .submenu a.active {
+            background: #16a085;
         }
 
         /* ===== MAIN ===== */
@@ -92,6 +110,24 @@
             🏠 Dashboard
         </a>
 
+        {{-- QUẢN LÝ TRANG HOME --}}
+        <a href="javascript:void(0)" id="home-menu-toggle"
+           class="{{ request()->routeIs('admin.home_sections.*') ? 'active' : '' }}">
+            🖼️ Trang chủ (Home)
+        </a>
+
+        <div id="home-submenu" class="submenu"
+             style="display: {{ request()->routeIs('admin.home_sections.*') ? 'block' : 'none' }}">
+           <a href="{{ route('admin.homesection.banner.index') }}"
+   class="{{ request()->is('admin/home_sections/banner*') ? 'active' : '' }}">
+   🖼 Banner
+</a>
+            {{-- <a href="{{ route('admin.home_sections.section', ['type'=>'event']) }}"
+               class="{{ ($type ?? '')=='event' ? 'active' : '' }}">Events</a>
+            <a href="{{ route('admin.home_sections.section', ['type'=>'sale']) }}"
+               class="{{ ($type ?? '')=='sale' ? 'active' : '' }}">Sales</a> --}}
+        </div>
+
         <a href="{{ route('admin.products.index') }}"
            class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
             👕 Sản phẩm
@@ -122,8 +158,7 @@
             </div>
 
             <div>
-                {{ auth()->user()->name ?? 'Admin' }}
-                |
+                {{ auth()->user()->name ?? 'Admin' }} |
                 <a href="{{ route('logout') }}"
                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     Đăng xuất
@@ -148,6 +183,14 @@
     </div>
 
 </div>
+
+{{-- JS toggle submenu --}}
+<script>
+    document.getElementById('home-menu-toggle').addEventListener('click', function() {
+        const submenu = document.getElementById('home-submenu');
+        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+    });
+</script>
 
 @yield('scripts')
 

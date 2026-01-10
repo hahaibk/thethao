@@ -12,7 +12,7 @@ class AuthController extends Controller
     // Hiển thị form login
     public function showLogin()
     {
-        return view('login/login'); // view login nhúng CSS
+        return view('shop/login/login'); // view login nhúng CSS
     }
 
     // Xử lý login
@@ -35,7 +35,7 @@ class AuthController extends Controller
     // Hiển thị form đăng ký
     public function showRegister()
     {
-        return view('login/register'); // view register nhúng CSS
+        return view('shop/login/register'); // view register nhúng CSS
     }
 
     // Xử lý đăng ký

@@ -11,12 +11,15 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\VariantImageController;
+use App\Http\Controllers\Admin\HomeSectionController;
+use App\Http\Controllers\Admin\ProductImageController;
 
 /*
 |-------------------------------------------------------------------------- 
 | PUBLIC ROUTES
 |-------------------------------------------------------------------------- 
 */
+Route::get('/', [ProductController::class, 'index'])->name('home');
 Route::get('/', [ProductController::class, 'index'])->name('home');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
@@ -58,7 +61,13 @@ Route::prefix('admin')
 
         // Products (XỬ LÝ VARIANT + IMAGE BÊN TRONG)
         Route::resource('products', AdminProductController::class);
+ // Xóa ảnh sản phẩm
+        Route::delete('product-images/{image}', [ProductImageController::class,'destroy'])
+            ->name('product_images.destroy');
 
+        // Xóa ảnh variant
+        Route::delete('variant-images/{image}', [VariantImageController::class,'destroy'])
+            ->name('variant_images.destroy');
         // Users
         Route::resource('users', AdminUserController::class);
 
@@ -70,4 +79,9 @@ Route::prefix('admin')
             'variant-images/{variantImage}',
             [VariantImageController::class, 'destroy']
         )->name('variant_images.destroy');
+        Route::prefix('home_sections')->name('homesection.')->group(function() {
+            Route::resource('banner', HomeSectionController::class);
+        });
+            Route::resource('users', Admin\UserController::class);
+
     });

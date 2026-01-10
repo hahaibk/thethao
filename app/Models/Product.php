@@ -20,17 +20,11 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
-    /**
-     * ẢNH CHUNG (KHÔNG GẮN VARIANT)
-     */
     public function images()
     {
-        return $this->hasMany(ProductImage::class)
-            ->orderBy('sort_order');
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
-    /**
-     * TỔNG TỒN KHO
-     */
+
     public function totalStock()
     {
         return $this->variants->sum('quantity');
@@ -59,21 +53,23 @@ class Product extends Model
             }
 
             // Variant + ảnh variant
-            foreach ($data['variants'] as $v) {
-                $variant = $product->variants()->create([
-                    'color'    => $v['color'],
-                    'size'     => $v['size'],
-                    'quantity' => $v['quantity'],
-                    'price'    => $v['price'] ?? null,
-                ]);
+            if(!empty($data['variants'])){
+                foreach ($data['variants'] as $v) {
+                    $variant = $product->variants()->create([
+                        'color'    => $v['color'] ?? null,
+                        'size'     => $v['size'] ?? null,
+                        'quantity' => $v['quantity'] ?? 0,
+                        'price'    => $v['price'] ?? null,
+                    ]);
 
-                if (!empty($v['images'])) {
-                    foreach ($v['images'] as $img) {
-                        $path = $img->store('variants', 'public');
-                        $variant->images()->create([
-                            'product_id' => $product->id,
-                            'image_path' => $path
-                        ]);
+                    if (!empty($v['images'])) {
+                        foreach ($v['images'] as $img) {
+                            $path = $img->store('variants', 'public');
+                            $variant->images()->create([
+                                'product_id' => $product->id,
+                                'image_path' => $path
+                            ]);
+                        }
                     }
                 }
             }
@@ -104,32 +100,35 @@ class Product extends Model
                 }
             }
 
-            foreach ($data['variants'] as $v) {
-                $variant = !empty($v['id'])
-                    ? $this->variants()->find($v['id'])
-                    : $this->variants()->create([
-                        'color'    => $v['color'],
-                        'size'     => $v['size'],
-                        'quantity' => $v['quantity'],
+            // Cập nhật variant
+            if(!empty($data['variants'])){
+                foreach ($data['variants'] as $v) {
+                    $variant = !empty($v['id'])
+                        ? $this->variants()->find($v['id'])
+                        : $this->variants()->create([
+                            'color'    => $v['color'] ?? null,
+                            'size'     => $v['size'] ?? null,
+                            'quantity' => $v['quantity'] ?? 0,
+                            'price'    => $v['price'] ?? null,
+                        ]);
+
+                    if(!$variant) continue;
+
+                    $variant->update([
+                        'color'    => $v['color'] ?? null,
+                        'size'     => $v['size'] ?? null,
+                        'quantity' => $v['quantity'] ?? 0,
                         'price'    => $v['price'] ?? null,
                     ]);
 
-                if (!$variant) continue;
-
-                $variant->update([
-                    'color'    => $v['color'],
-                    'size'     => $v['size'],
-                    'quantity' => $v['quantity'],
-                    'price'    => $v['price'] ?? null,
-                ]);
-
-                if (!empty($v['images'])) {
-                    foreach ($v['images'] as $img) {
-                        $path = $img->store('variants', 'public');
-                        $variant->images()->create([
-                            'product_id' => $this->id,
-                            'image_path' => $path
-                        ]);
+                    if (!empty($v['images'])) {
+                        foreach ($v['images'] as $img) {
+                            $path = $img->store('variants', 'public');
+                            $variant->images()->create([
+                                'product_id' => $this->id,
+                                'image_path' => $path
+                            ]);
+                        }
                     }
                 }
             }
@@ -154,8 +153,8 @@ class Product extends Model
                 }
                 $variant->images()->delete();
             }
-            $this->variants()->delete();
 
+            $this->variants()->delete();
             $this->delete();
         });
     }
