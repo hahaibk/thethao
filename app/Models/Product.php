@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
-    protected $fillable = ['name','price','category_id','description'];
+    protected $fillable = ['name','price','category_id','description','is_featured', ];
 
     /* ================= RELATIONS ================= */
 
@@ -164,5 +164,9 @@ class Product extends Model
             $this->variants()->delete();
             $this->delete();
         });
+    }
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', 1);
     }
 }

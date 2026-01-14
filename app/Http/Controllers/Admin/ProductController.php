@@ -175,4 +175,19 @@ class ProductController extends Controller
 
         return view('admin.products.show', compact('product'));
     }
+    public function featuredIndex()
+    {
+        $products = Product::featured()->latest()->paginate(15);
+        return view('admin.products.featured', compact('products'));
+    }
+
+    // Bật / tắt nổi bật
+    public function toggleFeatured(Product $product)
+    {
+        $product->update([
+            'is_featured' => !$product->is_featured
+        ]);
+
+        return back()->with('success', 'Cập nhật sản phẩm nổi bật thành công');
+    }
 }

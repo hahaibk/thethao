@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->string('name');
             $table->decimal('price', 10, 2);
             $table->text('description')->nullable();
+            $table->boolean('is_featured')->default(false);
             $table->timestamps();
         });
     }

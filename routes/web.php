@@ -74,6 +74,10 @@ Route::middleware(['auth'])->group(function () {
             // Xóa ảnh variant
             Route::delete('variant-images/{image}', [VariantImageController::class,'destroy'])
                 ->name('variant_images.destroy');
+            // sản phẩm nổi bật
+            Route::get('featured-products',[AdminProductController::class, 'featuredIndex'])->name('products.featured');
+
+            Route::post( 'featured-products/{product}',[AdminProductController::class, 'toggleFeatured'])->name('products.featured.toggle');
 
             // Users
             Route::resource('users', UserController::class);

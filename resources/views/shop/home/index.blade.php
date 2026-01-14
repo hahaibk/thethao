@@ -20,20 +20,15 @@
             @endforeach
         </div>
         <button class="carousel-control-prev" type="button" data-bs-target="#homeBannerCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Trước</span>
+            <span class="carousel-control-prev-icon"></span>
         </button>
         <button class="carousel-control-next" type="button" data-bs-target="#homeBannerCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Sau</span>
+            <span class="carousel-control-next-icon"></span>
         </button>
     </div>
 </section>
-@else
-<section class="home-section py-5 bg-light text-center">
-    <p>Hiện chưa có banner nào.</p>
-</section>
 @endif
+
 
 {{-- ================== DANH MỤC ================== --}}
 @php
@@ -49,8 +44,8 @@ $categories = [
     <div class="row text-center">
         @foreach($categories as $cat)
             <div class="col-6 col-md-3 mb-4">
-                <div class="category-box border rounded p-2">
-                    <div style="height:150px; overflow:hidden; border-radius:8px;">
+                <div class="border rounded p-2">
+                    <div style="height:150px; overflow:hidden;">
                         <img src="{{ $cat['image'] }}" class="img-fluid w-100" style="object-fit:cover; height:100%;">
                     </div>
                     <h6 class="mt-2">{{ $cat['name'] }}</h6>
@@ -60,55 +55,58 @@ $categories = [
     </div>
 </section>
 
+
 {{-- ================== SẢN PHẨM NỔI BẬT ================== --}}
-@if(isset($products) && count($products))
 <section class="bg-light py-5">
     <div class="container">
-        <h3 class="fw-bold mb-4">SẢN PHẨM NỔI BẬT</h3>
+        <h3 class="fw-bold mb-4">⭐ SẢN PHẨM NỔI BẬT</h3>
+
         <div class="row">
-            @foreach($products as $product)
-                @php
-                    $firstImage = $product->images->first();
-                @endphp
+            @forelse($products as $product)
+                @php $img = $product->images->first(); @endphp
+
                 <div class="col-6 col-md-3 mb-4">
-                    <div class="product-card border rounded overflow-hidden">
+                    <div class="border rounded overflow-hidden h-100">
                         <div style="height:250px; overflow:hidden;">
-                            <img src="{{ $firstImage ? asset('storage/'.$firstImage->image_path) : 'https://via.placeholder.com/300x300' }}" 
-                                 class="img-fluid w-100" style="object-fit:cover; height:100%;">
+                            <img src="{{ $img ? asset('storage/'.$img->image_path) : 'https://via.placeholder.com/300' }}"
+                                 class="img-fluid w-100"
+                                 style="height:100%; object-fit:cover;">
                         </div>
+
                         <div class="p-3 text-center">
-                            <h6>{{ $product->name ?? '' }}</h6>
-                            <div>{{ isset($product->price) ? number_format($product->price) : '' }} đ</div>
-                            <a href="{{ route('products.show',$product->id) }}" class="btn btn-outline-dark w-100 mt-2">Xem chi tiết</a>
+                            <h6 class="mb-1">{{ $product->name }}</h6>
+                            <div class="text-danger fw-bold mb-2">
+                                {{ number_format($product->price) }} đ
+                            </div>
+
+                            <a href="{{ route('products.show',$product) }}"
+                               class="btn btn-outline-dark w-100">
+                                Xem chi tiết
+                            </a>
                         </div>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <p class="text-center text-muted">
+                    Chưa có sản phẩm nổi bật
+                </p>
+            @endforelse
         </div>
     </div>
 </section>
-@else
-<section class="bg-light py-5 text-center">
-    <p>Hiện chưa có sản phẩm nào.</p>
-</section>
-@endif
+
+
 {{-- ================== EVENT ================== --}}
 @if(isset($events) && $events->count())
 <section class="py-5 bg-white">
     <div class="container">
-        <h3 class="fw-bold mb-4 text-center">
-            SỰ KIỆN 
-        </h3>
+        <h3 class="fw-bold mb-4 text-center">SỰ KIỆN</h3>
 
         <div class="row">
             @foreach($events as $event)
-                <div class="col-12 col-md-4 mb-4">
-                    <a href="{{ route('events.show', $event->id) }}"
-                       class="text-decoration-none text-dark">
-
-                        <div class="card h-100 border-0 shadow-sm">
-
-                            {{-- Ảnh --}}
+                <div class="col-md-4 mb-4">
+                    <a href="{{ route('events.show',$event) }}" class="text-decoration-none text-dark">
+                        <div class="card h-100 shadow-sm border-0">
                             <div style="height:220px; overflow:hidden;">
                                 <img src="{{ $event->thumbnail
                                     ? asset('storage/'.$event->thumbnail)
@@ -118,17 +116,9 @@ $categories = [
                             </div>
 
                             <div class="card-body">
-                                <h5 class="fw-bold mb-1">
-                                    {{ $event->title }}
-                                </h5>
-
-                                @if($event->subtitle)
-                                    <p class="text-muted small mb-0">
-                                        {{ $event->subtitle }}
-                                    </p>
-                                @endif
+                                <h5 class="fw-bold">{{ $event->title }}</h5>
+                                <p class="text-muted small mb-0">{{ $event->subtitle }}</p>
                             </div>
-
                         </div>
                     </a>
                 </div>
@@ -137,6 +127,5 @@ $categories = [
     </div>
 </section>
 @endif
-
 
 @endsection

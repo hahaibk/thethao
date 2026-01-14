@@ -25,12 +25,14 @@ class ProductController extends Controller
             ];
         });
 
-        // ===== PRODUCT =====
+        // ===== SẢN PHẨM NỔI BẬT =====
         $products = Product::with('images')
+            ->where('is_featured', 1)
             ->latest()
-            ->paginate(12);
+            ->take(8) // trang chủ chỉ cần 6–8 sp
+            ->get();
 
-        // ===== EVENT (CHỈ LẤY EVENT – KHÔNG is_active) =====
+        // ===== EVENT =====
         $events = Event::latest()->take(3)->get();
 
         return view('shop.home.index', compact(
