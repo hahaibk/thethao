@@ -16,3 +16,4 @@ class HomeSection extends Model
         return $this->hasMany(HomeSectionImage::class,'home_section_id')->orderBy('sort_order');
     }
 }
+ 

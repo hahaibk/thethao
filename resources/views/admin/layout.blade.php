@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <title>@yield('title', 'Admin Dashboard')</title>
 
-    {{-- CSS --}}
+    {{-- Bootstrap 5 --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {{-- Bootstrap Icons --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
             background: #f4f6f9;
+            font-size: 14px;
         }
 
         .admin-wrapper {
@@ -19,48 +23,51 @@
 
         /* ===== SIDEBAR ===== */
         .sidebar {
-            width: 220px;
-            background: #2c3e50;
+            width: 240px;
+            background: linear-gradient(180deg, #1f2937, #111827);
             color: #fff;
-            padding: 20px;
+            padding: 20px 15px;
         }
 
         .sidebar h2 {
             font-size: 18px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: center;
+            font-weight: 600;
         }
 
         .sidebar a {
-            display: block;
-            padding: 10px;
-            color: #ecf0f1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            color: #e5e7eb;
             text-decoration: none;
-            border-radius: 4px;
-            margin-bottom: 5px;
-            transition: 0.2s;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            transition: all 0.2s ease;
         }
 
         .sidebar a:hover,
         .sidebar a.active {
-            background: #1abc9c;
+            background: #2563eb;
+            color: #fff;
         }
 
         /* Submenu */
-        .sidebar .submenu {
-            display: none;
+        .submenu {
             margin-left: 10px;
+            margin-top: 5px;
         }
 
-        .sidebar .submenu a {
-            padding-left: 25px;
-            font-size: 14px;
-            background: #34495e;
+        .submenu a {
+            font-size: 13px;
+            background: #1f2937;
         }
 
-        .sidebar .submenu a:hover,
-        .sidebar .submenu a.active {
-            background: #16a085;
+        .submenu a:hover,
+        .submenu a.active {
+            background: #1d4ed8;
         }
 
         /* ===== MAIN ===== */
@@ -73,8 +80,8 @@
         /* ===== HEADER ===== */
         .header {
             background: #fff;
-            padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e5e7eb;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -83,7 +90,6 @@
         /* ===== CONTENT ===== */
         .content {
             padding: 20px;
-            background: #f4f6f9;
             flex: 1;
         }
 
@@ -92,8 +98,9 @@
             background: #fff;
             padding: 10px;
             text-align: center;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #e5e7eb;
             font-size: 13px;
+            color: #6b7280;
         }
     </style>
 </head>
@@ -102,97 +109,95 @@
 <div class="admin-wrapper">
 
     {{-- SIDEBAR --}}
-    <div class="sidebar">
-        <h2>ADMIN</h2>
+    <aside class="sidebar">
+        <h2>ADMIN PANEL</h2>
 
         <a href="{{ route('admin.dashboard') }}"
            class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-            🏠 Dashboard
+            <i class="bi bi-speedometer2"></i> Dashboard
         </a>
 
-        {{-- QUẢN LÝ TRANG HOME --}}
+        {{-- HOME SECTION --}}
         <a href="javascript:void(0)" id="home-menu-toggle"
-           class="{{ request()->routeIs('admin.home_sections.*') ? 'active' : '' }}">
-            🖼️ Trang chủ (Home)
+           class="{{ request()->routeIs('admin.homesection.*') ? 'active' : '' }}">
+            <i class="bi bi-images"></i> Trang chủ
         </a>
 
         <div id="home-submenu" class="submenu"
-             style="display: {{ request()->routeIs('admin.home_sections.*') ? 'block' : 'none' }}">
-           <a href="{{ route('admin.homesection.banner.index') }}"
-   class="{{ request()->is('admin/home_sections/banner*') ? 'active' : '' }}">
-   🖼 Banner
-</a>
-            {{-- <a href="{{ route('admin.home_sections.section', ['type'=>'event']) }}"
-               class="{{ ($type ?? '')=='event' ? 'active' : '' }}">Events</a>
-            <a href="{{ route('admin.home_sections.section', ['type'=>'sale']) }}"
-               class="{{ ($type ?? '')=='sale' ? 'active' : '' }}">Sales</a> --}}
+             style="display: {{ request()->routeIs('admin.homesection.*') ? 'block' : 'none' }}">
+            <a href="{{ route('admin.homesection.banner.index') }}">
+                <i class="bi bi-image"></i> Banner
+            </a>
+            <a href="{{ route('admin.homesection.events.index') }}">
+                <i class="bi bi-calendar-event"></i> Event
+            </a>
+            <a href="{{ route('admin.homesection.sales.index') }}"
+                class="{{ request()->routeIs('admin.homesection.sales.*') ? 'active' : '' }}">
+                <i class="bi bi-tags"></i> Sale
+            </a>
         </div>
 
-        <a href="{{ route('admin.products.index') }}"
-           class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
-            👕 Sản phẩm
+        <hr class="border-secondary">
+
+        <a href="{{ route('admin.products.index') }}">
+            <i class="bi bi-bag"></i> Sản phẩm
         </a>
 
-        <a href="{{ route('admin.categories.index') }}"
-           class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
-            📂 Loại sản phẩm
+        <a href="{{ route('admin.categories.index') }}">
+            <i class="bi bi-folder"></i> Loại sản phẩm
         </a>
 
-        <a href="{{ route('admin.users.index') }}"
-           class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-            👤 Users
+        <a href="{{ route('admin.users.index') }}">
+            <i class="bi bi-people"></i> Users
         </a>
 
-        <hr>
+        <hr class="border-secondary">
 
-        <a href="{{ route('home') }}">🌐 Về website</a>
-    </div>
+        <a href="{{ route('home') }}">
+            <i class="bi bi-globe"></i> Về website
+        </a>
+    </aside>
 
     {{-- MAIN --}}
     <div class="main">
 
         {{-- HEADER --}}
-        <div class="header">
-            <div>
-                <strong>@yield('page-title', 'Dashboard')</strong>
-            </div>
+        <header class="header">
+            <strong>@yield('page-title', 'Dashboard')</strong>
 
-            <div>
-                {{ auth()->user()->name ?? 'Admin' }} |
-                <a href="{{ route('logout') }}"
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                    Đăng xuất
-                </a>
-
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted">{{ auth()->user()->name ?? 'Admin' }}</span>
+                <form action="{{ route('logout') }}" method="POST">
                     @csrf
+                    <button class="btn btn-sm btn-outline-danger">Đăng xuất</button>
                 </form>
             </div>
-        </div>
+        </header>
 
         {{-- CONTENT --}}
-        <div class="content">
+        <main class="content">
             @yield('content')
-        </div>
+        </main>
 
         {{-- FOOTER --}}
-        <div class="footer">
+        <footer class="footer">
             © {{ date('Y') }} Admin Panel
-        </div>
+        </footer>
 
     </div>
-
 </div>
 
-{{-- JS toggle submenu --}}
+{{-- Bootstrap JS --}}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{{-- Toggle submenu --}}
 <script>
-    document.getElementById('home-menu-toggle').addEventListener('click', function() {
+    document.getElementById('home-menu-toggle')?.addEventListener('click', function () {
         const submenu = document.getElementById('home-submenu');
         submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
     });
 </script>
 
 @yield('scripts')
-
 </body>
 </html>

@@ -10,6 +10,8 @@ class Product extends Model
 {
     protected $fillable = ['name','price','category_id','description'];
 
+    /* ================= RELATIONS ================= */
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -31,6 +33,7 @@ class Product extends Model
     }
 
     /* ================= CREATE ================= */
+
     public static function createProduct(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -42,7 +45,7 @@ class Product extends Model
                 'description' => $data['description'] ?? null,
             ]);
 
-            // Ảnh chung
+            // Ảnh sản phẩm
             if (!empty($data['images'])) {
                 foreach ($data['images'] as $img) {
                     $path = $img->store('products', 'public');
@@ -52,16 +55,17 @@ class Product extends Model
                 }
             }
 
-            // Variant + ảnh variant
-            if(!empty($data['variants'])){
+            // Variants
+            if (!empty($data['variants'])) {
                 foreach ($data['variants'] as $v) {
+
                     $variant = $product->variants()->create([
                         'color'    => $v['color'] ?? null,
                         'size'     => $v['size'] ?? null,
                         'quantity' => $v['quantity'] ?? 0,
-                        'price'    => $v['price'] ?? null,
                     ]);
 
+                    // Ảnh variant
                     if (!empty($v['images'])) {
                         foreach ($v['images'] as $img) {
                             $path = $img->store('variants', 'public');
@@ -79,6 +83,7 @@ class Product extends Model
     }
 
     /* ================= UPDATE ================= */
+
     public function updateProduct(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -90,7 +95,7 @@ class Product extends Model
                 'description' => $data['description'] ?? null,
             ]);
 
-            // thêm ảnh chung
+            // Thêm ảnh sản phẩm
             if (!empty($data['images'])) {
                 foreach ($data['images'] as $img) {
                     $path = $img->store('products', 'public');
@@ -100,27 +105,28 @@ class Product extends Model
                 }
             }
 
-            // Cập nhật variant
-            if(!empty($data['variants'])){
+            // Update / create variants
+            if (!empty($data['variants'])) {
                 foreach ($data['variants'] as $v) {
-                    $variant = !empty($v['id'])
-                        ? $this->variants()->find($v['id'])
-                        : $this->variants()->create([
+
+                    if (!empty($v['id'])) {
+                        $variant = $this->variants()->find($v['id']);
+                        if (!$variant) continue;
+
+                        $variant->update([
                             'color'    => $v['color'] ?? null,
                             'size'     => $v['size'] ?? null,
                             'quantity' => $v['quantity'] ?? 0,
-                            'price'    => $v['price'] ?? null,
                         ]);
+                    } else {
+                        $variant = $this->variants()->create([
+                            'color'    => $v['color'] ?? null,
+                            'size'     => $v['size'] ?? null,
+                            'quantity' => $v['quantity'] ?? 0,
+                        ]);
+                    }
 
-                    if(!$variant) continue;
-
-                    $variant->update([
-                        'color'    => $v['color'] ?? null,
-                        'size'     => $v['size'] ?? null,
-                        'quantity' => $v['quantity'] ?? 0,
-                        'price'    => $v['price'] ?? null,
-                    ]);
-
+                    // Ảnh variant
                     if (!empty($v['images'])) {
                         foreach ($v['images'] as $img) {
                             $path = $img->store('variants', 'public');
@@ -138,6 +144,7 @@ class Product extends Model
     }
 
     /* ================= DELETE ================= */
+
     public function deleteProduct()
     {
         return DB::transaction(function () {

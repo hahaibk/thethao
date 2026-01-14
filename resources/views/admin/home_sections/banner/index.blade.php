@@ -27,11 +27,16 @@
             <tr>
                 <td>{{ $banner->id }}</td>
                 <td>
-                    @if($banner->image_path)
-                        <img src="{{ asset('storage/' . $banner->image_path) }}" alt="Banner" width="120">
+                    @if($banner->image)
+                        <img src="{{ asset('storage/' . $banner->image) }}"
+                            alt="Banner"
+                            width="120"
+                            class="img-thumbnail">
+                    @else
+                        <span class="text-muted">No image</span>
                     @endif
                 </td>
-                <td>{{ $banner->title }}</td>
+                                <td>{{ $banner->title }}</td>
                 <td>{{ $banner->sort_order }}</td>
                 <td>
                     <a href="{{ route('admin.homesection.banner.edit', $banner->id) }}" class="btn btn-sm btn-warning">Sửa</a>

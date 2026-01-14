@@ -92,5 +92,51 @@ $categories = [
     <p>Hiện chưa có sản phẩm nào.</p>
 </section>
 @endif
+{{-- ================== EVENT ================== --}}
+@if(isset($events) && $events->count())
+<section class="py-5 bg-white">
+    <div class="container">
+        <h3 class="fw-bold mb-4 text-center">
+            SỰ KIỆN 
+        </h3>
+
+        <div class="row">
+            @foreach($events as $event)
+                <div class="col-12 col-md-4 mb-4">
+                    <a href="{{ route('events.show', $event->id) }}"
+                       class="text-decoration-none text-dark">
+
+                        <div class="card h-100 border-0 shadow-sm">
+
+                            {{-- Ảnh --}}
+                            <div style="height:220px; overflow:hidden;">
+                                <img src="{{ $event->thumbnail
+                                    ? asset('storage/'.$event->thumbnail)
+                                    : 'https://via.placeholder.com/600x400' }}"
+                                     class="w-100"
+                                     style="height:100%; object-fit:cover;">
+                            </div>
+
+                            <div class="card-body">
+                                <h5 class="fw-bold mb-1">
+                                    {{ $event->title }}
+                                </h5>
+
+                                @if($event->subtitle)
+                                    <p class="text-muted small mb-0">
+                                        {{ $event->subtitle }}
+                                    </p>
+                                @endif
+                            </div>
+
+                        </div>
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
 
 @endsection

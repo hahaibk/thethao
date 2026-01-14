@@ -1,55 +1,183 @@
-<form action="{{ route('admin.homesection.banner.update', $banner->id) }}" method="POST" enctype="multipart/form-data">
-    @csrf
-    @method('PUT')
+@extends('admin.layout')
 
-    <div class="mb-3">
-        <label>Tiêu đề</label>
-        <input type="text" name="title" value="{{ old('title', $banner->title) }}" class="form-control" required>
+@section('title', $banner->exists ? 'Sửa Banner' : 'Thêm Banner')
+
+@section('styles')
+<style>
+    .banner-form .card {
+        border-radius: 12px;
+    }
+
+    .banner-form .form-label {
+        font-weight: 600;
+    }
+
+    .banner-form .image-preview {
+        max-height: 180px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+
+    .banner-form .btn {
+        min-width: 120px;
+    }
+</style>
+@endsection
+
+@section('content')
+<div class="container-fluid banner-form">
+
+    {{-- Header --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">
+            {{ $banner->exists ? '✏️ Sửa Banner' : '➕ Thêm Banner' }}
+        </h4>
+        <a href="{{ route('admin.homesection.banner.index') }}"
+           class="btn btn-outline-secondary btn-sm">
+            ← Quay lại
+        </a>
     </div>
 
-    <div class="mb-3">
-        <label>Subtitle</label>
-        <input type="text" name="subtitle" value="{{ old('subtitle', $banner->subtitle) }}" class="form-control">
-    </div>
+    {{-- Errors --}}
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-    <div class="mb-3">
-        <label>Link</label>
-        <input type="text" name="link" value="{{ old('link', $banner->link) }}" class="form-control">
-    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-    <div class="mb-3">
-        <label>Ảnh</label>
+            <form
+                action="{{ $banner->exists
+                    ? route('admin.homesection.banner.update', $banner->id)
+                    : route('admin.homesection.banner.store') }}"
+                method="POST"
+                enctype="multipart/form-data">
 
-        {{-- Ảnh cũ --}}
-        @if($banner->image && file_exists(public_path('storage/'.$banner->image)))
-            <div class="mb-2">
-                <img src="{{ asset('storage/'.$banner->image) }}" style="max-height:150px; object-fit:cover;">
-            </div>
-        @endif
+                @csrf
+                @if($banner->exists)
+                    @method('PUT')
+                @endif
 
-        <input type="file" name="image" id="image" class="form-control" accept="image/*">
+                <div class="row g-3">
 
-        {{-- Preview ảnh mới --}}
-        <div class="mt-2">
-            <img id="preview" src="#" style="display:none; max-height:150px; object-fit:cover;">
+                    {{-- Title --}}
+                    <div class="col-md-6">
+                        <label class="form-label">Tiêu đề</label>
+                        <input type="text"
+                               name="title"
+                               class="form-control"
+                               value="{{ old('title', $banner->title) }}"
+                               required>
+                    </div>
+
+                    {{-- Sort order --}}
+                    <div class="col-md-3">
+                        <label class="form-label">Sort order</label>
+                        <input type="number"
+                               name="sort_order"
+                               class="form-control"
+                               value="{{ old('sort_order', $banner->sort_order ?? 0) }}">
+                    </div>
+
+                    {{-- Active --}}
+                    <div class="col-md-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select name="is_active" class="form-select">
+                            <option value="1" {{ old('is_active', $banner->is_active) == 1 ? 'selected' : '' }}>
+                                Hiển thị
+                            </option>
+                            <option value="0" {{ old('is_active', $banner->is_active) == 0 ? 'selected' : '' }}>
+                                Ẩn
+                            </option>
+                        </select>
+                    </div>
+
+                    {{-- Subtitle --}}
+                    <div class="col-md-12">
+                        <label class="form-label">Tiêu đề phụ</label>
+                        <input type="text"
+                               name="subtitle"
+                               class="form-control"
+                               value="{{ old('subtitle', $banner->subtitle) }}">
+                    </div>
+
+                    {{-- Link --}}
+                    <div class="col-md-12">
+                        <label class="form-label">Link</label>
+                        <input type="text"
+                               name="link"
+                               class="form-control"
+                               placeholder="https://..."
+                               value="{{ old('link', $banner->link) }}">
+                    </div>
+
+                    {{-- Image --}}
+                    <div class="col-md-12">
+                        <label class="form-label">Ảnh banner</label>
+                        <input type="file"
+                               name="image"
+                               class="form-control"
+                               accept="image/*"
+                               onchange="previewImage(this)">
+                    </div>
+
+                    {{-- Preview --}}
+                    <div class="col-md-12">
+                        @if($banner->image)
+                            <img id="imagePreview"
+                                 src="{{ asset('storage/'.$banner->image) }}"
+                                 class="image-preview mt-2">
+                        @else
+                            <img id="imagePreview"
+                                 class="image-preview mt-2"
+                                 style="display:none">
+                        @endif
+                    </div>
+
+                </div>
+
+                {{-- Actions --}}
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        💾 Lưu
+                    </button>
+
+                    @if($banner->exists)
+                        <form action="{{ route('admin.homesection.banner.destroy', $banner->id) }}"
+                              method="POST"
+                              onsubmit="return confirm('Bạn có chắc muốn xóa banner này?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-danger">
+                                🗑 Xóa
+                            </button>
+                        </form>
+                    @endif
+                </div>
+
+            </form>
         </div>
     </div>
+</div>
+@endsection
 
-    <div class="mb-3">
-        <label>Sort order</label>
-        <input type="number" name="sort_order" value="{{ old('sort_order', $banner->sort_order) }}" class="form-control">
-    </div>
-
-    <button type="submit" class="btn btn-success">Cập nhật</button>
-</form>
-
+@section('scripts')
 <script>
-document.getElementById('image').addEventListener('change', function(event){
-    const [file] = event.target.files;
-    const preview = document.getElementById('preview');
-    if(file){
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const file = input.files[0];
+
+    if (file) {
         preview.src = URL.createObjectURL(file);
         preview.style.display = 'block';
     }
-});
+}
 </script>
+@endsection

@@ -12,65 +12,83 @@ class AuthController extends Controller
     // Hiển thị form login
     public function showLogin()
     {
-        return view('shop/login/login'); // view login nhúng CSS
+        return view('shop.login.login');
     }
 
-    // Xử lý login
+    // ================== LOGIN ==================
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
 
         if (Auth::attempt($credentials)) {
-            $role = Auth::user()->role;
 
-            if ($role === 'admin') return redirect('/admin/dashboard');
-            if ($role === 'staff') return redirect('/staff');
+            $user = Auth::user();
 
-            return redirect('/'); // user
+            // 🔒 NẾU TÀI KHOẢN BỊ KHÓA → ĐÁ RA NGAY
+            if ($user->is_locked) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Tài khoản này đã bị khóa!'
+                ]);
+            }
+
+            // regenerate session
+            $request->session()->regenerate();
+
+            // Điều hướng theo role
+            if ($user->role === 'admin') {
+                return redirect('/admin/dashboard');
+            }
+
+            if ($user->role === 'staff') {
+                return redirect('/staff');
+            }
+
+            return redirect('/');
         }
 
-        return back()->withErrors(['email' => 'Email hoặc mật khẩu không đúng']);
+        return back()->withErrors([
+            'email' => 'Email hoặc mật khẩu không đúng'
+        ]);
     }
 
-    // Hiển thị form đăng ký
+    // ================== REGISTER ==================
     public function showRegister()
     {
-        return view('shop/login/register'); // view register nhúng CSS
+        return view('shop.login.register');
     }
 
-    // Xử lý đăng ký
     public function register(Request $request)
     {
-        // validate dữ liệu
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        // tạo user mới, mặc định role = 'user'
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'user',
+            'name'      => $request->name,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'role'      => 'user',
+            'is_locked' => false,
         ]);
 
-        // login luôn sau khi đăng ký
         Auth::login($user);
 
-        return redirect('/'); // redirect user về trang chính
+        return redirect('/');
     }
 
-    // Logout
-    public function logout()
+    // ================== LOGOUT ==================
+    public function logout(Request $request)
     {
         Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect('/login');
     }
-     protected function redirectTo()
-{
-    return auth()->user()->is_admin ? '/admin/dashboard' : '/';
-}
-
 }
