@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Sport;
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,36 +16,39 @@ class ProductController extends Controller
         DANH SÁCH SẢN PHẨM
     ========================== */
     public function index(Request $request)
-{
-    $query = Product::with([
-            'category',
-            'images' => function ($q) {
-                $q->orderBy('sort_order');
-            }
-        ])
-        ->withCount('variants')
-        ->withSum('variants as total_stock', 'quantity');
+    {
+        $query = Product::with([
+                'category.sport',
+                'images' => fn($q) => $q->orderBy('sort_order')
+            ])
+            ->withCount('variants')
+            ->withSum('variants as total_stock', 'quantity');
 
-    // 🔍 TÌM KIẾM THEO TÊN
-    if ($request->filled('q')) {
-        $query->where('name', 'like', '%' . $request->q . '%');
+        // 🔍 Tìm theo tên
+        if ($request->filled('q')) {
+            $query->where('name', 'like', '%'.$request->q.'%');
+        }
+
+        // 🏀 Lọc theo sport (THÊM)
+        if ($request->filled('sport_id')) {
+            $query->whereHas('category', function ($q) use ($request) {
+                $q->where('sport_id', $request->sport_id);
+            });
+        }
+
+        // 🗂 Lọc theo category (CŨ)
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $products = $query->latest()->paginate(10)->withQueryString();
+
+        return view('admin.products.index', [
+            'products'   => $products,
+            'categories' => Category::all(),
+            'sports'     => Sport::orderBy('sort_order')->get(),
+        ]);
     }
-
-    // 🗂 LỌC THEO DANH MỤC
-    if ($request->filled('category_id')) {
-        $query->where('category_id', $request->category_id);
-    }
-    $products = $query->paginate(10); // 10 sản phẩm/trang
-    $products = $query
-        ->latest()
-        ->paginate(10)
-        ->withQueryString(); // giữ filter khi phân trang
-
-
-    $categories = Category::all();
-
-    return view('admin.products.index', compact('products', 'categories'));
-}
 
     /* =========================
         FORM TẠO
@@ -53,12 +57,13 @@ class ProductController extends Controller
     {
         return view('admin.products.create', [
             'product'    => new Product(),
-            'categories' => Category::all(),
+            'sports'     => Sport::orderBy('sort_order')->get(),
+            'categories' => Category::all(), // fallback
         ]);
     }
 
     /* =========================
-        LƯU SẢN PHẨM
+        LƯU
     ========================== */
     public function store(Request $request)
     {
@@ -68,25 +73,20 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
 
-            // Ảnh chung
             'images'     => 'nullable|array',
             'images.*'   => 'image|max:2048',
 
-            // Biến thể
             'variants'               => 'required|array|min:1',
             'variants.*.color'       => 'nullable|string',
             'variants.*.size'        => 'nullable|string',
             'variants.*.quantity'    => 'required|integer|min:0',
-
-            // Ảnh biến thể
             'variants.*.images'      => 'nullable|array',
             'variants.*.images.*'    => 'image|max:2048',
         ]);
 
         Product::createProduct($data);
 
-        return redirect()
-            ->route('admin.products.index')
+        return redirect()->route('admin.products.index')
             ->with('success', 'Tạo sản phẩm thành công');
     }
 
@@ -95,13 +95,11 @@ class ProductController extends Controller
     ========================== */
     public function edit(Product $product)
     {
-        $product->load([
-            'images',
-            'variants.images'
-        ]);
+        $product->load(['images','variants.images','category.sport']);
 
         return view('admin.products.edit', [
             'product'    => $product,
+            'sports'     => Sport::orderBy('sort_order')->get(),
             'categories' => Category::all(),
         ]);
     }
@@ -117,71 +115,40 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
 
-            // Ảnh chung
             'images'     => 'nullable|array',
             'images.*'   => 'image|max:2048',
 
-            // Biến thể
             'variants'               => 'required|array|min:1',
             'variants.*.id'          => 'nullable|exists:product_variants,id',
             'variants.*.color'       => 'nullable|string',
             'variants.*.size'        => 'nullable|string',
             'variants.*.quantity'    => 'required|integer|min:0',
-
-            // Ảnh biến thể
             'variants.*.images'      => 'nullable|array',
             'variants.*.images.*'    => 'image|max:2048',
         ]);
 
         $product->updateProduct($data);
 
-        return redirect()
-            ->route('admin.products.index')
+        return redirect()->route('admin.products.index')
             ->with('success', 'Cập nhật sản phẩm thành công');
     }
 
     /* =========================
-        XÓA SẢN PHẨM
+        XÓA
     ========================== */
     public function destroy(Product $product)
     {
         $product->deleteProduct();
 
-        return redirect()
-            ->route('admin.products.index')
+        return redirect()->route('admin.products.index')
             ->with('success', 'Xóa sản phẩm thành công');
     }
-
-    /* =========================
-        XÓA ẢNH CHUNG (AJAX)
-    ========================== */
-    public function destroyImage(ProductImage $image)
+    public function show($id)
     {
-        Storage::disk('public')->delete($image->image_path);
-        $image->delete();
-
-        return response()->json(['success' => true]);
-    }
-
-    /* =========================
-        XEM CHI TIẾT (ADMIN)
-    ========================== */
-    public function show(Product $product)
-    {
-        $product->load([
-            'images',
-            'variants.images'
-        ]);
+        $product = Product::findOrFail($id);
 
         return view('admin.products.show', compact('product'));
     }
-    public function featuredIndex()
-    {
-        $products = Product::featured()->latest()->paginate(15);
-        return view('admin.products.featured', compact('products'));
-    }
-
-    // Bật / tắt nổi bật
     public function toggleFeatured(Product $product)
     {
         $product->update([
@@ -190,4 +157,12 @@ class ProductController extends Controller
 
         return back()->with('success', 'Cập nhật sản phẩm nổi bật thành công');
     }
+    public function featuredIndex()
+{
+    $products = Product::where('is_featured', true)
+        ->latest()
+        ->paginate(10);
+
+    return view('admin.products.featured', compact('products'));
 }
+ }

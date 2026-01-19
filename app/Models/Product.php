@@ -8,8 +8,19 @@ use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
-    protected $fillable = ['name','price','category_id','description','is_featured', ];
-
+    protected $fillable = [
+        'name',
+        'price',
+        'category_id',
+         'sport_id', 
+        'gender', 
+        'description',
+        'is_featured',
+    ];
+     public function sport()
+    {
+        return $this->belongsTo(Sport::class);
+    }
     /* ================= RELATIONS ================= */
 
     public function category()
@@ -27,9 +38,47 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
 
+    public function promotions()
+    {
+        return $this->belongsToMany(Promotion::class);
+    }
+
+    /* ================= STOCK ================= */
+
     public function totalStock()
     {
         return $this->variants->sum('quantity');
+    }
+    public function show($id)
+    {
+        $product = Product::findOrFail($id);
+
+        return view('admin.products.show', compact('product'));
+    }
+
+    /* ================= PROMOTION LOGIC ================= */
+
+    // Lấy khuyến mãi đang áp dụng (ưu tiên giá trị cao nhất)
+    public function activePromotion()
+    {
+        return $this->promotions
+            ->filter(fn ($promo) => $promo->isValid())
+            ->sortByDesc('value')
+            ->first();
+    }
+
+    // GIÁ SAU KHI GIẢM
+    public function finalPrice()
+    {
+        $price = $this->price;
+
+        $promotion = $this->activePromotion();
+
+        if ($promotion) {
+            return $promotion->apply($price);
+        }
+
+        return $price;
     }
 
     /* ================= CREATE ================= */
@@ -65,7 +114,6 @@ class Product extends Model
                         'quantity' => $v['quantity'] ?? 0,
                     ]);
 
-                    // Ảnh variant
                     if (!empty($v['images'])) {
                         foreach ($v['images'] as $img) {
                             $path = $img->store('variants', 'public');
@@ -95,7 +143,6 @@ class Product extends Model
                 'description' => $data['description'] ?? null,
             ]);
 
-            // Thêm ảnh sản phẩm
             if (!empty($data['images'])) {
                 foreach ($data['images'] as $img) {
                     $path = $img->store('products', 'public');
@@ -105,7 +152,6 @@ class Product extends Model
                 }
             }
 
-            // Update / create variants
             if (!empty($data['variants'])) {
                 foreach ($data['variants'] as $v) {
 
@@ -125,17 +171,6 @@ class Product extends Model
                             'quantity' => $v['quantity'] ?? 0,
                         ]);
                     }
-
-                    // Ảnh variant
-                    if (!empty($v['images'])) {
-                        foreach ($v['images'] as $img) {
-                            $path = $img->store('variants', 'public');
-                            $variant->images()->create([
-                                'product_id' => $this->id,
-                                'image_path' => $path
-                            ]);
-                        }
-                    }
                 }
             }
 
@@ -152,19 +187,15 @@ class Product extends Model
             foreach ($this->images as $img) {
                 Storage::disk('public')->delete($img->image_path);
             }
+
             $this->images()->delete();
-
-            foreach ($this->variants as $variant) {
-                foreach ($variant->images as $img) {
-                    Storage::disk('public')->delete($img->image_path);
-                }
-                $variant->images()->delete();
-            }
-
             $this->variants()->delete();
             $this->delete();
         });
     }
+
+    /* ================= SCOPE ================= */
+
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', 1);

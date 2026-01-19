@@ -138,11 +138,15 @@
         </div>
 
         <hr class="border-secondary">
-
+        <a href="{{ route('admin.sports.index') }}">
+            <i class="bi bi-bag"></i> Môn thể thao
+        </a>
         <a href="{{ route('admin.products.index') }}">
             <i class="bi bi-bag"></i> Sản phẩm
         </a>
-
+        <a href="{{ route('admin.promotions.index') }}">
+            <i class="bi bi-tags-fill"></i> Khuyến mãi
+        </a>
         <a href="{{ route('admin.categories.index') }}">
             <i class="bi bi-folder"></i> Loại sản phẩm
         </a>
@@ -150,6 +154,10 @@
         <a href="{{ route('admin.users.index') }}">
             <i class="bi bi-people"></i> Users
         </a>
+            <a href="{{ route('admin.orders.index') }}"
+    class="{{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+        <i class="bi bi-receipt"></i> Hóa đơn
+    </a>
 
         <hr class="border-secondary">
 

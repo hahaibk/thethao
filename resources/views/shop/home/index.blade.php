@@ -4,57 +4,139 @@
 
 @section('content')
 
+<style>
+/* ================= BANNER ================= */
+.home-banner{
+    padding:0 !important;
+}
+.home-banner .carousel,
+.home-banner .carousel-inner,
+.home-banner .carousel-item{
+    height:520px;
+}
+.home-banner-img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+/* ================= SPORT SLIDER ================= */
+.sport-section{
+    overflow:hidden;
+}
+.sport-slider-wrapper{
+    position:relative;
+    width:100%;
+}
+.sport-slider{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:20px;
+    overflow-x:auto;
+    scroll-behavior:smooth;
+    padding:10px 60px;
+}
+.sport-slider::-webkit-scrollbar{
+    display:none;
+}
+.sport-item{
+    flex:0 0 280px;
+    height:420px;
+    border-radius:22px;
+    overflow:hidden;
+    position:relative;
+    background:#000;
+}
+.sport-item img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transition:transform .4s ease;
+}
+.sport-item:hover img{
+    transform:scale(1.05);
+}
+.sport-title{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    padding:14px 0;
+    text-align:center;
+    color:#fff;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:1px;
+    background:linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0));
+}
+.sport-nav{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    border:none;
+    background:#fff;
+    box-shadow:0 6px 16px rgba(0,0,0,.2);
+    font-size:30px;
+    cursor:pointer;
+    z-index:10;
+}
+.sport-nav.prev{ left:10px; }
+.sport-nav.next{ right:10px; }
+</style>
+
 {{-- ================== BANNER ================== --}}
 @if(isset($sections) && count($sections))
-<section class="home-banner py-3">
+<section class="home-banner">
     <div id="homeBannerCarousel" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-inner">
             @foreach($sections as $k => $section)
                 @if(!empty($section['image']))
                 <div class="carousel-item {{ $k == 0 ? 'active' : '' }}">
-                    <img src="{{ asset('storage/'.$section['image']) }}" 
-                         class="d-block w-100" 
-                         style="max-height:400px; object-fit:cover;">
+                    <img src="{{ asset('storage/'.$section['image']) }}"
+                         class="home-banner-img">
                 </div>
                 @endif
             @endforeach
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#homeBannerCarousel" data-bs-slide="prev">
+
+        <button class="carousel-control-prev" type="button"
+                data-bs-target="#homeBannerCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon"></span>
         </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#homeBannerCarousel" data-bs-slide="next">
+        <button class="carousel-control-next" type="button"
+                data-bs-target="#homeBannerCarousel" data-bs-slide="next">
             <span class="carousel-control-next-icon"></span>
         </button>
     </div>
 </section>
 @endif
 
+{{-- ================== SPORT SLIDER ================== --}}
+<section class="sport-section my-5">
+    <div class="container position-relative">
+        <h3 class="text-center mb-4 fw-bold">MÔN THỂ THAO</h3>
 
-{{-- ================== DANH MỤC ================== --}}
-@php
-$categories = [
-    ['name'=>'GIÀY NAM','image'=>'https://images.unsplash.com/photo-1542291026-7eec264c27ff'],
-    ['name'=>'GIÀY NỮ','image'=>'https://images.unsplash.com/photo-1600180758890-6b94519a8ba6'],
-    ['name'=>'ÁO QUẦN','image'=>'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a'],
-    ['name'=>'PHỤ KIỆN','image'=>'https://images.unsplash.com/photo-1620799139834-6b8f844fbe61'],
-];
-@endphp
+        <div class="sport-slider-wrapper">
+            <button class="sport-nav prev" onclick="slideSport(-1)">‹</button>
 
-<section class="container my-5">
-    <div class="row text-center">
-        @foreach($categories as $cat)
-            <div class="col-6 col-md-3 mb-4">
-                <div class="border rounded p-2">
-                    <div style="height:150px; overflow:hidden;">
-                        <img src="{{ $cat['image'] }}" class="img-fluid w-100" style="object-fit:cover; height:100%;">
+            <div class="sport-slider" id="sportSlider">
+                @foreach($sports as $sport)
+                    <div class="sport-item">
+                        <img src="{{ $sport->image
+                            ? asset('storage/'.$sport->image)
+                            : 'https://via.placeholder.com/400x550' }}">
+                        <div class="sport-title">{{ $sport->name }}</div>
                     </div>
-                    <h6 class="mt-2">{{ $cat['name'] }}</h6>
-                </div>
+                @endforeach
             </div>
-        @endforeach
+
+            <button class="sport-nav next" onclick="slideSport(1)">›</button>
+        </div>
     </div>
 </section>
-
 
 {{-- ================== SẢN PHẨM NỔI BẬT ================== --}}
 <section class="bg-light py-5">
@@ -63,69 +145,52 @@ $categories = [
 
         <div class="row">
             @forelse($products as $product)
-                @php $img = $product->images->first(); @endphp
+                @php
+                    $product->loadMissing('promotions');
+                    $img = $product->images->first();
+                    $promo = $product->activePromotion();
+                @endphp
 
                 <div class="col-6 col-md-3 mb-4">
-                    <div class="border rounded overflow-hidden h-100">
-                        <div style="height:250px; overflow:hidden;">
+                    <div class="border rounded overflow-hidden h-100 position-relative">
+                        @if($promo)
+                            <span class="badge bg-danger position-absolute top-0 start-0 m-2">
+                                -{{ $promo->type === 'percent' ? $promo->value.'%' : number_format($promo->value).'đ' }}
+                            </span>
+                        @endif
+
+                        <div style="height:250px;overflow:hidden;">
                             <img src="{{ $img ? asset('storage/'.$img->image_path) : 'https://via.placeholder.com/300' }}"
-                                 class="img-fluid w-100"
-                                 style="height:100%; object-fit:cover;">
+                                 class="w-100 h-100" style="object-fit:cover">
                         </div>
 
                         <div class="p-3 text-center">
-                            <h6 class="mb-1">{{ $product->name }}</h6>
-                            <div class="text-danger fw-bold mb-2">
-                                {{ number_format($product->price) }} đ
+                            <h6>{{ $product->name }}</h6>
+                            <div class="mb-2">
+                                @if($promo && $product->finalPrice() < $product->price)
+                                    <span class="text-danger fw-bold">{{ number_format($product->finalPrice()) }} đ</span>
+                                    <del class="small text-muted">{{ number_format($product->price) }} đ</del>
+                                @else
+                                    <span class="fw-bold">{{ number_format($product->price) }} đ</span>
+                                @endif
                             </div>
-
                             <a href="{{ route('products.show',$product) }}"
-                               class="btn btn-outline-dark w-100">
-                                Xem chi tiết
-                            </a>
+                               class="btn btn-outline-dark w-100">Xem chi tiết</a>
                         </div>
                     </div>
                 </div>
             @empty
-                <p class="text-center text-muted">
-                    Chưa có sản phẩm nổi bật
-                </p>
+                <p class="text-center text-muted">Chưa có sản phẩm</p>
             @endforelse
         </div>
     </div>
 </section>
 
-
-{{-- ================== EVENT ================== --}}
-@if(isset($events) && $events->count())
-<section class="py-5 bg-white">
-    <div class="container">
-        <h3 class="fw-bold mb-4 text-center">SỰ KIỆN</h3>
-
-        <div class="row">
-            @foreach($events as $event)
-                <div class="col-md-4 mb-4">
-                    <a href="{{ route('events.show',$event) }}" class="text-decoration-none text-dark">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div style="height:220px; overflow:hidden;">
-                                <img src="{{ $event->thumbnail
-                                    ? asset('storage/'.$event->thumbnail)
-                                    : 'https://via.placeholder.com/600x400' }}"
-                                     class="w-100"
-                                     style="height:100%; object-fit:cover;">
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="fw-bold">{{ $event->title }}</h5>
-                                <p class="text-muted small mb-0">{{ $event->subtitle }}</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-@endif
+<script>
+function slideSport(direction){
+    const slider = document.getElementById('sportSlider');
+    slider.scrollLeft += direction * 320;
+}
+</script>
 
 @endsection

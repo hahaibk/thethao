@@ -4,11 +4,10 @@
 <div class="container-fluid">
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">📂 Quản lý danh mục</h5>
-
-            <a href="{{ route('admin.categories.create') }}"
+            <h5 class="mb-0 fw-bold">🏀 Quản lý môn thể thao</h5>
+            <a href="{{ route('admin.sports.create') }}"
                class="btn btn-success btn-sm">
-                ➕ Thêm danh mục
+                ➕ Thêm sport
             </a>
         </div>
 
@@ -23,48 +22,49 @@
                 <table class="table table-bordered table-hover align-middle">
                     <thead class="table-light">
                         <tr class="text-center">
-                            <th>ID</th>
-                            <th>Tên</th>
-                            <th>Sport</th>
-                            <th>Có size</th>
-                            <th>Có màu</th>
+                            <th width="60">ID</th>
+                            <th width="90">Ảnh</th>
+                            <th>Tên sport</th>
+                            <th width="120">Thứ tự</th>
                             <th width="180">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($categories as $category)
+                        @forelse($sports as $sport)
                             <tr>
-                                <td class="text-center">{{ $category->id }}</td>
-                                <td>{{ $category->name }}</td>
-                                <td>{{ $category->sport?->name ?? '—' }}</td>
+                                <td class="text-center">{{ $sport->id }}</td>
+
                                 <td class="text-center">
-                                    @if($category->has_size)
-                                        <span class="badge bg-success">✔</span>
+                                    @if($sport->image)
+                                        <img src="{{ asset('storage/'.$sport->image) }}"
+                                             style="width:60px;height:60px;object-fit:cover"
+                                             class="rounded">
                                     @else
-                                        <span class="badge bg-secondary">✖</span>
+                                        —
                                     @endif
                                 </td>
+
+                                <td>{{ $sport->name }}</td>
+
                                 <td class="text-center">
-                                    @if($category->has_color)
-                                        <span class="badge bg-success">✔</span>
-                                    @else
-                                        <span class="badge bg-secondary">✖</span>
-                                    @endif
+                                    <span class="badge bg-primary">
+                                        {{ $sport->sort_order }}
+                                    </span>
                                 </td>
+
                                 <td class="text-center">
-                                    <a href="{{ route('admin.categories.edit', $category) }}"
+                                    <a href="{{ route('admin.sports.edit',$sport) }}"
                                        class="btn btn-warning btn-sm">
                                         ✏ Sửa
                                     </a>
 
-                                    <form action="{{ route('admin.categories.destroy', $category) }}"
+                                    <form action="{{ route('admin.sports.destroy',$sport) }}"
                                           method="POST"
                                           class="d-inline"
-                                          onsubmit="return confirm('Xóa danh mục này?')">
+                                          onsubmit="return confirm('Xóa sport này?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                                class="btn btn-danger btn-sm">
+                                        <button class="btn btn-danger btn-sm">
                                             🗑 Xóa
                                         </button>
                                     </form>
@@ -73,13 +73,15 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="text-center text-muted">
-                                    Chưa có danh mục nào
+                                    Chưa có môn thể thao nào
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+
+            {{ $sports->links() }}
         </div>
     </div>
 </div>

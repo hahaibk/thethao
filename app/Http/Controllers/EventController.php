@@ -9,6 +9,7 @@ class EventController extends Controller
 {
     public function show(Event $event)
     {
+        $events = Event::latest()->paginate(9);
         return view('shop.events.show', compact('event'));
     }
 }

@@ -26,6 +26,19 @@
                         </div>
                     @enderror
                 </div>
+                {{-- SPORT --}}
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Môn thể thao</label>
+                    <select name="sport_id" class="form-control">
+                        <option value="">-- Chưa gán --</option>
+                        @foreach($sports as $sport)
+                            <option value="{{ $sport->id }}"
+                                {{ old('sport_id') == $sport->id ? 'selected' : '' }}>
+                                {{ $sport->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
                 {{-- Checkbox --}}
                 <div class="mb-3 form-check">
